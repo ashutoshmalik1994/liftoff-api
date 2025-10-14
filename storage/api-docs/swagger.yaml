@@ -1,0 +1,2094 @@
+openapi: 3.0.0
+info:
+  title: "Liftoff Card Integration API"
+  description: "Defines the interface for programmatic interaction with the ACH payment processing system. This specification details resources for managing payees (merchants), originating individual ACH transactions, administering recurring payment schedules, and retrieving real-time status updates throughout the transaction lifecycle, including confirmation of settlement or details of returns."
+  contact:
+    name: "Liftoff Card Support / Grid Funding Integration Team"
+    email: support@liftoffcard.com
+  version: 1.0.0
+servers:
+  - url: "https://app.liftoffcard.com/liftoffcard-solutions-api"
+    description: "Production server"
+paths:
+  /api/v1/auth/token:
+    post:
+      tags:
+        - Authentication
+      summary: "Get authentication token (JWT)"
+      operationId: 212804489af549fa19ff9b679cdd33e3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: loreum_user
+                password:
+                  type: string
+                  example: loreum_user
+              type: object
+      responses:
+        200:
+          description: "Token generated successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: bearer
+                type: object
+        401:
+          description: "Invalid credentials"
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: "Refresh an expired JWT token"
+      operationId: c42c3cd7fd7fe0dbd5bcc42962059e90
+      responses:
+        200:
+          description: "Token refreshed successfully"
+        401:
+          description: "Invalid or expired token"
+      security:
+        - bearerAuth: []
+  /api/v1/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: "List all sent transactions"
+      description: "Retrieve a list of sent transactions. You can filter results using either `payee_id`."
+      operationId: ee044a6172f37778765cd0f4b9dbc874
+      parameters:
+        - name: payee_id
+          in: query
+          description: "Filter transactions by Payee (Merchant) ID"
+          required: false
+          schema:
+            oneOf:
+              - type: integer
+                example: 22
+              - type: string
+                example: 22A
+        - name: page
+          in: query
+          description: "Page number for pagination"
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: "Number of records per page (default: 10)"
+          required: false
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: "A list of transactions"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Transactions fetched successfully"
+                    type: object
+                  - $ref: "#/components/schemas/TransactionListResponse"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+  "/api/v1/transactions/{id}":
+    get:
+      tags:
+        - Transactions
+      summary: "Get a transaction or receivable by confirmation id"
+      description: "Returns the transaction or receivable details based on the provided confirmation id"
+      operationId: 84e38607374077b16feae70d81c067ca
+      parameters:
+        - name: id
+          in: path
+          description: "Confirmation ID from Transaction or receivable"
+          required: true
+          schema:
+            type: string
+            example: 240712021905968TEST
+      responses:
+        200:
+          description: "Successful response"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Transactions fetched successfully"
+                    type: object
+                  - $ref: "#/components/schemas/TransactionByConfirmationID"
+        404:
+          description: "Record Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFound"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+  /api/v1/transactions/date-range:
+    get:
+      tags:
+        - Transactions
+      summary: "Get all transactions and receivables by originated date range"
+      description: "Returns all transactions and receivables where originated_date is between 'from' and 'to' dates"
+      operationId: c16a3a578406de7230a4624cf466fa7e
+      parameters:
+        - name: from
+          in: query
+          description: "Start date in YYYY-MM-DD format"
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: "End date in YYYY-MM-DD format"
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          description: "Page number (default 1)"
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: "Number of records per page (default 10)"
+          required: false
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: "Successful response"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Transactions fetched successfully"
+                    type: object
+                  - $ref: "#/components/schemas/TransactionByDateRange"
+        400:
+          description: "Invalid date format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequest"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+  "/api/v1/transactions/{id}/cancel":
+    post:
+      tags:
+        - Transactions
+      summary: "Cancel a transaction or receivable by ID"
+      description: "Cancels a transaction or receivable using its unique ID"
+      operationId: 73ad08bfb1f5678bbcfcdd968be1e62d
+      parameters:
+        - name: id
+          in: path
+          description: "Transaction or receivable ID"
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "Cancelled successfully"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Transactions fetched successfully"
+                    type: object
+                  - $ref: "#/components/schemas/CancelTransactionByConfirmationId"
+        404:
+          description: "Record Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFound"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+  /api/v1/payees:
+    get:
+      tags:
+        - "Payees / Merchants"
+      summary: "Get all payees / merchants"
+      operationId: 85988b94349a335cee16c9f5129e6bc8
+      parameters:
+        - name: page
+          in: query
+          description: "Page number (default: 1)"
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: "Number of records per page (default: 10)"
+          required: false
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: "Successful response"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Transactions fetched successfully"
+                    type: object
+                  - $ref: "#/components/schemas/GetPayeeSchema"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - "Payees / Merchants"
+      summary: "Create a new payee and associated bank info"
+      operationId: 115e67c1f1eff6561395c9dc0a8a7def
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - payee_type
+                - payee_name
+                - first_name
+                - last_name
+                - email
+                - payee_id
+                - address_line1
+                - city
+                - state
+                - zip
+                - country
+                - account_name
+                - routing_number
+                - account_number
+                - confirm_account_number
+                - account_type
+              properties:
+                payee_type:
+                  type: string
+                  example: customer
+                payee_name:
+                  type: string
+                  example: api_payee
+                first_name:
+                  type: string
+                  example: demo
+                last_name:
+                  type: string
+                  example: tester
+                email:
+                  type: string
+                  example: customerdemo@gmail.com
+                payee_id:
+                  type: string
+                  example: "5352637434"
+                address_line1:
+                  type: string
+                  example: "demo,1232"
+                address_line2:
+                  type: string
+                  example: "demo2,34322"
+                phone:
+                  type: string
+                  example: "9876565744"
+                city:
+                  type: string
+                  example: demo_city
+                state:
+                  type: string
+                  example: FL
+                zip:
+                  type: string
+                  example: "12345"
+                country:
+                  type: string
+                  example: US
+                account_name:
+                  type: string
+                  example: "Demo Tester"
+                routing_number:
+                  type: string
+                  example: "867676564"
+                account_number:
+                  type: string
+                  example: "123456789"
+                confirm_account_number:
+                  type: string
+                  example: "123456789"
+                account_type:
+                  type: string
+                  enum:
+                    - personal_savings
+                    - personal_checking
+                    - business_checking
+                    - business_savings
+                  example: business_savings
+              type: object
+      responses:
+        200:
+          description: "Successful response"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Transactions fetched successfully"
+                    type: object
+                  - $ref: "#/components/schemas/CreatePayeeSchema"
+        422:
+          description: "Validation errors"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePayeeValidationErrorSchema"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+  "/api/v1/payees/{id}":
+    get:
+      tags:
+        - "Payees / Merchants"
+      summary: "Get a specific payee by ID"
+      operationId: de43b245f4327c2e9d0e03856f818797
+      parameters:
+        - name: id
+          in: path
+          description: "Payee ID"
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: "Successful response"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Transactions fetched successfully"
+                    type: object
+                  - $ref: "#/components/schemas/GetPayeeByIdSchema"
+        404:
+          description: "Record Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotFound"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+        - "Payees / Merchants"
+      summary: "Update an existing payee "
+      operationId: 77b8310c1755b15665d9dcaa73b92bda
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the payee to update"
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                payee_type:
+                  type: string
+                  example: customer
+                payee_name:
+                  type: string
+                  example: updated_payee
+                first_name:
+                  type: string
+                  example: Updated
+                last_name:
+                  type: string
+                  example: Name
+                email:
+                  type: string
+                  example: updateddemo@gmail.com
+                address_line1:
+                  type: string
+                  example: "123 updated street"
+                address_line2:
+                  type: string
+                  example: "apt 5B"
+                phone:
+                  type: string
+                  example: "9876543210"
+                city:
+                  type: string
+                  example: UpdatedCity
+                state:
+                  type: string
+                  example: CA
+                zip:
+                  type: string
+                  example: "90210"
+                country:
+                  type: string
+                  example: US
+              type: object
+      responses:
+        200:
+          description: "Successful response"
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - properties:
+                      status:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Payee has been successfully updated"
+                    type: object
+                  - $ref: "#/components/schemas/UpdatePayeeSchema"
+        404:
+          description: "Payee not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PayeeNotFoundSchema"
+        422:
+          description: "Validation error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePayeeValidationErrorSchema"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+  "/api/v1/payees/{id}/bank-accounts":
+    post:
+      tags:
+        - "Payees / Merchants"
+      summary: "Add a bank account to a payee"
+      description: "Associates a new bank account with an existing payee (merchant)."
+      operationId: PayeeBankAccount
+      parameters:
+        - name: id
+          in: path
+          description: "Payee ID"
+          required: true
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - account_name
+                - routing_number
+                - account_number
+                - account_type
+              properties:
+                account_name:
+                  type: string
+                  example: "Demo Account"
+                routing_number:
+                  type: string
+                  example: "021000021"
+                account_number:
+                  type: string
+                  example: "123456789"
+                confirm_account_number:
+                  type: string
+                  example: "123456789"
+                account_type:
+                  type: string
+                  example: business_savings
+              type: object
+      responses:
+        201:
+          description: "Bank account added successfully"
+        400:
+          description: "Invalid input"
+        401:
+          description: Unauthorized
+        404:
+          description: "Payee not found"
+      security:
+        - bearerAuth: []
+  /api/v1/banks:
+    get:
+      tags:
+        - "Bank Accounts"
+      summary: "List authenticated user's bank accounts with filters"
+      operationId: 6190c7412368ef6c84bb88affdbd4e6f
+      parameters:
+        - name: page
+          in: query
+          description: "Page number for pagination (default: 1)"
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: "Number of records per page (default: 10)"
+          required: false
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: "List of user's bank accounts"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAllBanksResponse"
+        401:
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+        500:
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - "Bank Accounts"
+      summary: "Create a new bank account"
+      operationId: 44c75d0080900fc827fec62c71874280
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - name
+                - bank_account_type
+                - address_line1
+                - city
+                - state
+                - zip
+                - country
+                - account_name
+                - routing_no
+                - account_no
+                - confirm_account_number
+                - account_type
+                - bank_nickname
+                - bank_name
+                - bank_street_address
+                - bank_city
+                - bank_state
+                - bank_zip
+              properties:
+                name:
+                  type: string
+                  example: "customer bank"
+                bank_account_type:
+                  type: string
+                  example: savings
+                address_line1:
+                  type: string
+                  example: "demo,1232"
+                address_line2:
+                  type: string
+                  example: "demo2,34322"
+                phone:
+                  type: string
+                  example: "9876565744"
+                city:
+                  type: string
+                  example: demo_city
+                state:
+                  type: string
+                  example: FL
+                zip:
+                  type: string
+                  example: "12345"
+                country:
+                  type: string
+                  example: US
+                account_name:
+                  type: string
+                  example: "Demo Tester"
+                routing_no:
+                  type: string
+                  example: "555555550"
+                account_no:
+                  type: string
+                  example: "123456789"
+                confirm_account_number:
+                  type: string
+                  example: "123456789"
+                account_type:
+                  type: string
+                  enum:
+                    - savings
+                    - checking
+                    - business
+                  example: savings
+                bank_nickname:
+                  type: string
+                  example: "Personal Savings"
+                bank_name:
+                  type: string
+                  example: "Bank of America"
+                bank_street_address:
+                  type: string
+                  example: "123 Main St"
+                bank_city:
+                  type: string
+                  example: "Los Angeles"
+                bank_state:
+                  type: string
+                  example: CA
+                bank_zip:
+                  type: string
+                  example: "90001"
+              type: object
+      responses:
+        200:
+          description: "Bank account created successfully"
+        401:
+          description: Unauthenticated
+        422:
+          description: "Validation error"
+        500:
+          description: "Server error"
+      security:
+        - bearerAuth: []
+  "/api/v1/banks/{id}":
+    get:
+      tags:
+        - "Bank Accounts"
+      summary: "Get a specific bank account by ID for the authenticated user"
+      operationId: 6eaedc739a6a8534bbffb1029858f972
+      parameters:
+        - name: id
+          in: path
+          description: "Bank Account ID"
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: "Bank account found"
+        404:
+          description: "Bank account not found"
+        401:
+          description: Unauthenticated
+      security:
+        - bearerAuth: []
+  /api/v1/recurring-payments:
+    get:
+      tags:
+        - "Recurring Payments"
+      summary: "List all recurring payment schedules"
+      operationId: 677f495c4d1821756bc814ee47e5b92f
+      parameters:
+        - name: page
+          in: query
+          description: "Page number for pagination (default: 1)"
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: per_page
+          in: query
+          description: "Number of records per page (default: 10)"
+          required: false
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: "List of recurring payments"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringPaymentListResponse"
+        401:
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unauthorized"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+        - "Recurring Payments"
+      summary: "Create a new recurring payment schedule"
+      operationId: 2f3750524d5345cab3d2bd5cd309c90c
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - status
+                - recurring
+                - first_payment_date
+                - number_of_payments
+                - last_bill_date
+                - amount
+                - payer
+                - payable_to
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - Active
+                    - Pause
+                    - active
+                    - pause
+                  example: Active
+                recurring:
+                  type: string
+                  enum:
+                    - Monthly
+                    - Bi-weekly
+                    - Bi-Weekly
+                    - bi-weekly
+                    - bi-Weekly
+                    - monthly
+                    - yearly
+                    - Daily
+                    - daily
+                    - Once-A-Week
+                    - Once-a-Week
+                    - once-A-Week
+                    - Once-A-week
+                    - once-A-Week
+                    - Once-a-week
+                  example: Monthly
+                first_payment_date:
+                  type: string
+                  format: date
+                  example: "2025-09-19"
+                number_of_payments:
+                  type: integer
+                  minimum: 1
+                  example: 12
+                last_bill_date:
+                  type: string
+                  format: date
+                  example: "2025-09-19"
+                amount:
+                  type: number
+                  format: float
+                  minimum: 1
+                  example: 100
+                purpose:
+                  type: string
+                  example: "Purpose of payment"
+                  nullable: true
+                payer:
+                  description: "Payee ID, must exist in payees table"
+                  type: integer
+                  example: 1
+                payable_to:
+                  description: "Bank account ID, must exist in bank_accounts table"
+                  type: integer
+                  example: 10
+              type: object
+      responses:
+        200:
+          description: "Recurring payment schedule created successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Recurring payment schedule created successfully"
+                  data:
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      status:
+                        type: string
+                        example: Active
+                      recurring:
+                        type: string
+                        example: Monthly
+                      first_payment_date:
+                        type: string
+                        format: date
+                        example: "2025-09-19"
+                    type: object
+                type: object
+        400:
+          description: "Bad request"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: "Validation errors"
+                type: object
+      security:
+        - bearerAuth: []
+  "/api/v1/recurring-payments/{id}":
+    get:
+      tags:
+        - "Recurring Payments"
+      summary: "Get a specific recurring payment"
+      operationId: c9aaa5898ab122d98da0f2e37f128600
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the recurring payment"
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: "Recurring payment details"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      status:
+                        type: string
+                        example: active
+                      user_id:
+                        type: integer
+                      recurring:
+                        type: string
+                      first_payment_date:
+                        type: string
+                        format: date
+                      payer:
+                        type: integer
+                        example: 2
+                      payable_to:
+                        type: integer
+                        example: 3
+                      amount:
+                        type: string
+                      next_bill_date:
+                        type: string
+                        format: date
+                    type: object
+                type: object
+        404:
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: "Recurring payment not found."
+                type: object
+      security:
+        - bearerAuth: []
+    patch:
+      tags:
+        - "Recurring Payments"
+      summary: "Update a recurring payment (partial update)"
+      operationId: 05391c3f59c3ff5d818e1e1d87ddc4e5
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the recurring payment to update"
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                recurring:
+                  type: string
+                  example: yearly
+                first_payment_date:
+                  type: string
+                  format: date
+                  example: "2024-12-10"
+                number_of_payments:
+                  type: integer
+                  example: 12
+                last_bill_date:
+                  type: string
+                  format: date
+                  example: "2024-11-10"
+                amount:
+                  type: number
+                  format: float
+                  example: 100
+                payer:
+                  type: integer
+                  example: 25
+                payable_to:
+                  type: integer
+                  example: 29
+                schedule_name:
+                  type: string
+                  example: my-bank
+                schedule_purpose:
+                  type: string
+                  example: "service payment"
+              type: object
+      responses:
+        200:
+          description: "Recurring payment updated successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Recurring payment updated successfully"
+                  data:
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      recurring:
+                        type: string
+                        example: yearly
+                      first_payment_date:
+                        type: string
+                        format: date
+                        example: "2024-12-10"
+                      number_of_payments:
+                        type: integer
+                        example: 12
+                      last_bill_date:
+                        type: string
+                        format: date
+                        example: "2024-11-10"
+                      amount:
+                        type: number
+                        format: float
+                        example: 100
+                      payment_processed:
+                        type: string
+                        example: processed
+                      payer:
+                        type: integer
+                        example: 25
+                      payable_to:
+                        type: integer
+                        example: 29
+                      memo:
+                        type: string
+                        example: my-bank
+                      purpose:
+                        type: string
+                        example: "service payment"
+                      count_payments:
+                        type: integer
+                        example: 12
+                      transaction_status:
+                        type: integer
+                        example: 1
+                      next_bill_date:
+                        type: string
+                        format: date
+                        example: "2025-01-01"
+                    type: object
+                type: object
+        404:
+          description: "Recurring payment not found"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: "Recurring payment not found."
+                type: object
+        400:
+          description: "Validation error"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: "Validation error: payer not found."
+                type: object
+      security:
+        - bearerAuth: []
+  "/api/v1/recurring-payments/{id}/{status}":
+    post:
+      tags:
+        - "Recurring Payments"
+      summary: "Update the status of a recurring payment"
+      operationId: 51402ac5d1b3bb3b1abdbfd56d42d16d
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the recurring payment"
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: path
+          description: "The new status of the recurring payment (pause, resume, stop)"
+          required: true
+          schema:
+            type: string
+            enum:
+              - pause
+              - resume
+              - stop
+      responses:
+        200:
+          description: "Status updated successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: "Recurring payment status updated successfully"
+                type: object
+        400:
+          description: "Invalid status or payment ID"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: "Invalid status or payment ID"
+                type: object
+        404:
+          description: "Recurring payment not found"
+          content:
+            application/json:
+              schema:
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: "Recurring payment not found."
+                type: object
+      security:
+        - bearerAuth: []
+components:
+  schemas:
+    GetAllBanksResponse:
+      description: "Top-level API response for fetching all user bank accounts."
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "200"
+        data:
+          properties:
+            status:
+              type: string
+              example: success
+            data:
+              description: "List of user's linked bank accounts"
+              type: array
+              items:
+                $ref: "#/components/schemas/BankAccountItem"
+            pagination:
+              $ref: "#/components/schemas/pagination"
+          type: object
+      type: object
+    BankAccountItem:
+      description: "Detailed schema for a single bank account record."
+      properties:
+        id:
+          type: integer
+          example: 65
+        user_id:
+          type: string
+          example: "25"
+        country:
+          type: string
+          example: US
+        name:
+          type: string
+          example: "customer bank"
+        account_no:
+          type: string
+          example: "*****6789"
+        routing_no:
+          type: string
+          example: "*****5550"
+        transit_no:
+          type: string
+          example: null
+          nullable: true
+        financial_institute_no:
+          type: string
+          example: null
+          nullable: true
+        bank_account_type:
+          type: string
+          example: savings
+        bank_name:
+          type: string
+          example: "Bank of America"
+        bank_street_address:
+          type: string
+          example: "123 Main St"
+        bank_city:
+          type: string
+          example: "Los Angeles"
+        bank_state:
+          type: string
+          example: CA
+        bank_zip:
+          type: string
+          example: "90001"
+        account_status:
+          type: string
+          example: pending
+        current_balance:
+          type: string
+          example: "0"
+        available_balance:
+          type: string
+          example: "0"
+        bank_confirmation_id:
+          type: string
+          example: 250312080213MIW
+          nullable: true
+      type: object
+    GetPayeeByIdSchema:
+      description: "Get Payee By Id Schema."
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Success
+        data:
+          properties:
+            user_id:
+              type: integer
+              example: 25
+            source:
+              type: string
+              example: payees
+            data:
+              $ref: "#/components/schemas/PayeeCommonSchema"
+            "Primary Account":
+              $ref: "#/components/schemas/PrimaryAccount"
+            "Additional Banks":
+              type: array
+              items:
+                $ref: "#/components/schemas/PrimaryAccount"
+          type: object
+      type: object
+    PrimaryAccount:
+      description: "Response schema for primary account."
+      properties:
+        id:
+          type: integer
+          example: 108
+        payee_id:
+          type: integer
+          example: 121
+        account_holder_name:
+          type: string
+          example: "Demo Account"
+        routing_no:
+          type: string
+          example: "555555550"
+        account_no:
+          type: string
+          example: "555555550"
+        account_type:
+          type: string
+          example: "Demo Account"
+        created_at:
+          type: string
+          format: date
+          example: 10-01-2025
+        updated_at:
+          type: string
+          format: date
+          example: 10-01-2025
+      type: object
+    GetPayeeSchema:
+      description: "Response schema for getting payee details by ID."
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Success
+        data:
+          properties:
+            user_id:
+              type: integer
+              example: 25
+            source:
+              type: string
+              example: payees
+            payees:
+              description: "List of payees with account and bank details"
+              type: array
+              items:
+                properties:
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/PayeeCommonSchema"
+                      - properties:
+                          created_at:
+                            type: string
+                            format: date
+                            example: 07-02-2024
+                          updated_at:
+                            type: string
+                            format: date
+                            example: 10-09-2025
+                        type: object
+                  "Primary Account":
+                    $ref: "#/components/schemas/PrimaryAccount"
+                  "Additional Banks":
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PrimaryAccount"
+                type: object
+            pagination:
+              $ref: "#/components/schemas/pagination"
+          type: object
+      type: object
+    PayeeCommonSchema:
+      description: "Common keys for payee"
+      properties:
+        id:
+          type: integer
+          example: 25
+        user_id:
+          type: integer
+          example: 25
+        payee_type:
+          type: string
+          example: vendor
+        payee_name:
+          type: string
+          example: loreum
+        email:
+          type: string
+          example: example@gmail.com
+        phone_no:
+          type: string
+          example: "04353534545"
+        address1:
+          type: string
+          example: "street 1 ,232 ,CA"
+        address2:
+          type: string
+          example: "street 1 ,232 ,CA"
+        city:
+          type: string
+          example: fgbfb
+        state:
+          type: string
+          example: NY
+        zip:
+          type: string
+          example: "12345"
+        country:
+          type: string
+          example: US
+      type: object
+    CreatePayeeSchema:
+      description: "Create Payee Response Schema"
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Success
+        data:
+          properties:
+            id:
+              type: integer
+              example: 1
+            message:
+              type: string
+              example: "Payee data has been successfully inserted"
+          type: object
+      type: object
+    CreatePayeeValidationErrorSchema:
+      description: "Validation error response schema when input fields are missing or invalid."
+      properties:
+        status:
+          description: "HTTP status code for validation failure."
+          type: integer
+          example: 422
+        message:
+          description: "General error message."
+          type: string
+          example: "The payee external id field is required."
+        data:
+          description: "Detailed validation errors per field."
+          properties:
+            payee_external_id:
+              type: array
+              items:
+                type: string
+                example: "The payee external id field is required."
+          type: object
+      type: object
+    UpdatePayeeSchema:
+      properties:
+        data:
+          properties:
+            message:
+              type: string
+              example: Success
+            payee:
+              allOf:
+                - $ref: "#/components/schemas/PayeeCommonSchema"
+                - properties:
+                    unique_id:
+                      type: string
+                      example: WdhjJ
+                    nickname:
+                      type: string
+                      example: "Updated Name"
+                    account_no:
+                      type: string
+                      example: "12121212121"
+                    created_at:
+                      type: string
+                      format: date-time
+                      example: "2024-07-02T16:30:43.000000Z"
+                    updated_at:
+                      type: string
+                      format: date-time
+                      example: "2025-10-09T19:24:59.000000Z"
+                  type: object
+          type: object
+      type: object
+    PayeeNotFoundSchema:
+      description: "Error response schema when a Payee is not found"
+      properties:
+        error:
+          type: string
+          example: "Payee not found"
+      type: object
+    RecurringPaymentListResponse:
+      description: "Response schema for listing all recurring payment schedules with pagination"
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          description: "List of recurring payment schedules"
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringPaymentItem"
+        pagination:
+          $ref: "#/components/schemas/pagination"
+      type: object
+    RecurringPaymentItem:
+      description: "Single recurring payment record details"
+      properties:
+        id:
+          type: integer
+          example: 12
+        status:
+          type: string
+          example: active
+        user_id:
+          type: integer
+          example: 25
+        recurring:
+          type: string
+          example: monthly
+        first_payment_date:
+          type: string
+          format: date
+          example: 07-12-2024
+        last_bill_date:
+          type: string
+          format: date
+          example: 08-12-2024
+        number_of_payments:
+          type: integer
+          example: 6
+        amount:
+          type: number
+          format: float
+          example: 1250.75
+        payer:
+          type: string
+          example: "Demo Payer"
+        payer_id:
+          type: string
+          example: ibank_22
+        payable_to:
+          type: string
+          example: "Demo Bank Account"
+        payable_to_id:
+          type: integer
+          example: 32
+        schedule_name:
+          type: string
+          example: "Quarterly Rent"
+        schedule_purpose:
+          type: string
+          example: "Office Space"
+        count_payments:
+          type: integer
+          example: 3
+        next_bill_date:
+          type: string
+          format: date
+          example: 09-12-2024
+        created_at:
+          type: string
+          format: date
+          example: 07-01-2024
+        updated_at:
+          type: string
+          format: date
+          example: 07-15-2024
+      type: object
+    InternalServerError:
+      description: "Generic internal server error response"
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: "An error occurred while fetching recurring payments"
+        error:
+          type: string
+          example: "SQLSTATE[HY000]: General error ..."
+      type: object
+    TransactionListResponse:
+      description: "Response schema for listing transactions"
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Transactions fetched successfully"
+        data:
+          properties:
+            transaction_id:
+              type: string
+              example: 81383c5c-ee32-42fd-8578-4dc4bbfd11e1
+            user:
+              properties:
+                id:
+                  type: integer
+                  example: 25
+                name:
+                  type: string
+                  example: loreum
+                email:
+                  type: string
+                  example: kaswebtester@gmail.com
+              type: object
+            transactions:
+              type: array
+              items:
+                $ref: "#/components/schemas/TransactionAll"
+            pagination:
+              $ref: "#/components/schemas/pagination"
+          type: object
+      type: object
+    TransactionSchemaBase:
+      description: "Schema related to transaction having common fields."
+      properties:
+        id:
+          description: "Unique transaction ID."
+          type: integer
+          readOnly: true
+          example: 187
+        payee_id:
+          description: "ID of the payee."
+          type: integer
+          example: 22
+        debit_card_id:
+          description: "Linked debit card ID, if any."
+          type: integer
+          example: null
+          nullable: true
+        bank_id:
+          description: "ID of the bank account used."
+          type: integer
+          example: 37
+        wallet_id:
+          description: "Linked wallet ID, if any."
+          type: integer
+          example: null
+          nullable: true
+        payee_account_no:
+          description: "Masked account number of the payee."
+          type: string
+          example: XXXXXXX2121
+        email:
+          description: "Email of the payee."
+          type: string
+          format: email
+          example: test@gmail.com
+        payee_cat:
+          description: "Payee category."
+          type: string
+          example: null
+          nullable: true
+        amount:
+          description: "Transaction amount."
+          type: string
+          example: "21.00"
+        payment_date:
+          description: "Scheduled date of the payment."
+          type: string
+          format: date
+          example: "2025-04-02"
+        payee_id_acc:
+          description: "Account ID of the payee."
+          type: string
+          example: null
+          nullable: true
+        transfer_mode:
+          description: "Transfer type."
+          type: string
+          example: Recurring
+        rtp:
+          description: "RTP flag."
+          type: string
+          example: null
+          nullable: true
+        settlement_date:
+          description: "Settlement date of the transaction."
+          type: string
+          format: date
+          example: null
+          nullable: true
+        rtn_code:
+          description: "Return code if transaction failed."
+          type: string
+          example: null
+          nullable: true
+      type: object
+    TransactionAll:
+      description: "Schema related to getAllTransaction"
+      allOf:
+        - $ref: "#/components/schemas/TransactionSchemaBase"
+        - properties:
+            type:
+              description: "Transaction type."
+              type: string
+              example: null
+              nullable: true
+            user_id:
+              description: "User ID."
+              type: integer
+              example: 29
+            invoice_no:
+              description: "Invoice number."
+              type: string
+              example: INV23232YESS_12
+            trans_comment:
+              description: "Transaction comment if any."
+              type: string
+              example: null
+              nullable: true
+            confirmation:
+              description: "Confirmation if transaction is successful."
+              type: string
+              example: 240712021905968TEST
+              nullable: true
+            tokenize_payment:
+              type: string
+              example: null
+              nullable: true
+            status_text:
+              description: "Status of a transaction."
+              type: string
+              example: Cleared
+            Merchant/PayeeName:
+              description: "Merchant or Payee Name."
+              type: string
+              example: null
+              nullable: true
+            "Schedule Name":
+              type: string
+              example: sfvdzfvsd
+            "Schedule Purpose":
+              type: string
+              example: ""
+            transfer_mode:
+              type: string
+              example: "ACH / Direct Deposit"
+              nullable: true
+            return_date:
+              type: string
+              format: date
+              example: null
+              nullable: true
+            deposit_date:
+              type: string
+              format: date
+              example: 07-15-2024
+              nullable: true
+            organization_date:
+              type: string
+              format: date
+              example: 07-15-2024
+              nullable: true
+            effective_date:
+              type: string
+              format: date
+              example: 07-15-2024
+              nullable: true
+          type: object
+    pagination:
+      description: "Schema related to pagination"
+      properties:
+        total:
+          type: integer
+          example: 46
+        per_page:
+          type: integer
+          example: 3
+        current_page:
+          type: integer
+          example: 2
+        last_page:
+          type: integer
+          example: 16
+        from:
+          type: integer
+          example: 4
+        to:
+          type: integer
+          example: 6
+      type: object
+    TransactionByConfirmationID:
+      description: "Response schema for transaction or receivable by confirmation id"
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Success
+        data:
+          properties:
+            transaction_id:
+              type: string
+              example: 81383c5c-ee32-42fd-8578-4dc4bbfd11e1
+            source:
+              type: string
+              example: transactions
+            transaction:
+              $ref: "#/components/schemas/TransactionByConfirmationMergedSchema"
+          type: object
+      type: object
+    TransactionByConfirmationMergedSchema:
+      allOf:
+        - $ref: "#/components/schemas/TransactionCommonSchema"
+        - $ref: "#/components/schemas/TransactionByConfirmationIdBaseSchema"
+    TransactionByConfirmationIdBaseSchema:
+      description: "Transaction schema related to confirmation id"
+      properties:
+        rtn_date:
+          type: string
+          format: date
+          example: null
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          example: null
+          nullable: true
+        organization_date:
+          type: string
+          format: date
+          example: 07-15-2024
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          example: null
+          nullable: true
+      type: object
+    TransactionCommonSchema:
+      description: "Common Transaction schema"
+      allOf:
+        - $ref: "#/components/schemas/TransactionSchemaBase"
+        - properties:
+            invoice_no:
+              description: "Invoice number."
+              type: string
+              example: INV23232YESS_12
+            confirmation:
+              description: "Confirmation if transaction is successful."
+              type: string
+              example: 240712021905968TEST
+              nullable: true
+            tokenize_payment:
+              type: string
+              example: null
+              nullable: true
+            status_text:
+              description: "Status of a transaction."
+              type: string
+              example: Cleared
+            Merchant/PayeeName:
+              description: "Merchant or Payee Name."
+              type: string
+              example: null
+              nullable: true
+            "Schedule Name":
+              type: string
+              example: sfvdzfvsd
+            "Schedule Purpose":
+              type: string
+              example: ""
+            deposit_date:
+              type: string
+              format: date
+              example: null
+              nullable: true
+            effective_date:
+              type: string
+              format: date
+              example: 07-15-2024
+              nullable: true
+          type: object
+    TransactionByDateRange:
+      description: "Response schema for transaction or receivable by date range. Response will only contain transactions having originated_date in between provided date range"
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Success
+        data:
+          properties:
+            transaction_id:
+              type: string
+              example: 81383c5c-ee32-42fd-8578-4dc4bbfd11e1
+            source:
+              type: string
+              example: transactions
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/TransactionByDateRangeMergedSchema"
+            pagination:
+              $ref: "#/components/schemas/pagination"
+          type: object
+      type: object
+    TransactionByDateRangeMergedSchema:
+      allOf:
+        - $ref: "#/components/schemas/TransactionCommonSchema"
+        - $ref: "#/components/schemas/TransactionByDateRangeBaseSchema"
+    TransactionByDateRangeBaseSchema:
+      description: "Transaction schema related to date range"
+      properties:
+        source:
+          type: string
+          example: transactions
+        organization_date:
+          type: string
+          format: date
+          example: 07-15-2024
+          nullable: true
+        return_date:
+          type: string
+          format: date
+          example: null
+          nullable: true
+      type: object
+    CancelTransactionByConfirmationId:
+      description: "Response schema for canceled transaction."
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Success
+        data:
+          properties:
+            transaction_id:
+              type: string
+              example: 81383c5c-ee32-42fd-8578-4dc4bbfd11e1
+            source:
+              type: string
+              example: transactions
+            message:
+              type: string
+              example: "Transaction cancelled successfully"
+            status:
+              type: string
+              example: cancelled
+            transaction:
+              $ref: "#/components/schemas/CancelTransactionByConfirmationIdMergedSchema"
+          type: object
+      type: object
+    CancelTransactionByConfirmationIdMergedSchema:
+      allOf:
+        - $ref: "#/components/schemas/TransactionCommonSchema"
+        - $ref: "#/components/schemas/CancelTransactionByConfirmationIdSchema"
+    CancelTransactionByConfirmationIdSchema:
+      description: "Fields related to cancel transaction schema"
+      properties:
+        user_id:
+          type: integer
+          example: 25
+        payee:
+          type: string
+          example: null
+          nullable: true
+        created_date:
+          type: string
+          format: date
+          example: 07-12-2024
+        originated_date:
+          type: string
+          format: date
+          example: null
+          nullable: true
+        effective_date:
+          type: string
+          format: date
+          example: null
+          nullable: true
+        return_date:
+          type: string
+          format: date
+          example: null
+          nullable: true
+      type: object
+    Error:
+      description: "Generic error response schema"
+      properties:
+        status:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Invalid request data"
+        error:
+          type: string
+          example: "Bad Request"
+      type: object
+    Unauthorized:
+      description: "Response schema for Unauthorized"
+      properties:
+        message:
+          type: string
+          example: "Token invalid or missing. Please login again."
+      type: object
+    NotFound:
+      description: "Response schema for Record Not Found"
+      properties:
+        status:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: "Record not found."
+        data:
+          properties:
+            transaction_id:
+              type: string
+              example: 81383c5c-ee32-42fd-8578-4dc4bbfd11e1
+          type: object
+      type: object
+    BadRequest:
+      description: "Response schema for Record Not Found"
+      properties:
+        status:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Invalid date format. Use YYYY-MM-DD."
+        data:
+          properties:
+            transaction_id:
+              type: string
+              example: 81383c5c-ee32-42fd-8578-4dc4bbfd11e1
+          type: object
+      type: object
+  securitySchemes:
+    bearerAuth:
+      type: http
+      description: "Enter JWT Bearer token"
+      name: Authorization
+      in: header
+      bearerFormat: JWT
+      scheme: bearer
+tags:
+  - name: Authentication
+    description: Authentication
+  - name: Transactions
+    description: Transactions
+  - name: "Payees / Merchants"
+    description: "Payees / Merchants"
+  - name: "Bank Accounts"
+    description: "Bank Accounts"
+  - name: "Recurring Payments"
+    description: "Recurring Payments"
