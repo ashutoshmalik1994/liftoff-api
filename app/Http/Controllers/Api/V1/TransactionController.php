@@ -25,6 +25,9 @@ use App\Jobs\ProcessRecurringPaymentJob;
 use App\Jobs\VerifyAndCreateBankAccount;
 use Carbon\Carbon;
 use App\Http\Responses\ApiResponse;
+use Illuminate\Support\Facades\Http;
+use DateTime;
+use App\Models\LoginUsers;
 
 class TransactionController extends BaseApiController
 {
@@ -141,6 +144,11 @@ class TransactionController extends BaseApiController
                 $item->{'Merchant/PayeeName'} = $item->payee
                     ? $item->payee->payee_name
                     : null;
+
+                // 🔹 Ensure payee_id is integer
+                if (!empty($item->payee_id)) {
+                    $item->payee_id = (int) $item->payee_id;
+                }
 
                 // 🔹 Memo split
                 if (isset($item->memo)) {
@@ -1881,7 +1889,7 @@ class TransactionController extends BaseApiController
                 ];
 
                 // ✅ Using ApiResponse for standardized response
-                return ApiResponse::success($responseData, 201, "Bank account linked successfully");
+                return ApiResponse::success($responseData, "Bank account linked successfully", 200);
             }
         } catch (\Exception $e) {
             \Log::error("Error in payeeBankAccount: " . $e->getMessage(), [
@@ -2521,7 +2529,7 @@ class TransactionController extends BaseApiController
             "status" => "required|string|in:Active,Pause,active,pause",
             "recurring" =>
             "required|string|in:Monthly,Bi-weekly,Bi-Weekly,bi-weekly,bi-Weekly,monthly,yearly,Daily,daily,Once-A-Week,Once-a-Week,once-A-Week,Once-A-week,once-A-Week,Once-a-week",
-            "first_payment_date" => "required|date_format:Y-m-d",
+            "first_payment_date" => "required|date_format:Y-m-d|after_or_equal:today",
             "number_of_payments" => "required|integer|min:1",
             "amount" => "required|numeric|min:1.00",
             "schedule_name" => "nullable|string",
@@ -2563,6 +2571,10 @@ class TransactionController extends BaseApiController
                 ->exists();
 
             if ($payerExistsInBank) {
+                $payerBank = PayeeBank::where("id", $request->payer)
+                    ->where("user_id", $user->id)
+                    ->first();
+                $payeeId = $payerBank->payee_id;
                 $PayeeBankdataid = $request->payer;
             } else {
                 $PayeeBankdata = PayeeInternationalBank::where("unique_id", $request->payer)
@@ -2571,6 +2583,7 @@ class TransactionController extends BaseApiController
 
                 if ($PayeeBankdata) {
                     $PayeeBankdataid = 'ibank_' . $PayeeBankdata->id;
+                    $payeeId = $PayeeBankdata->payee_id;
                 } else {
                     return response()->json([
                         "status"  => "error",
@@ -2676,6 +2689,15 @@ class TransactionController extends BaseApiController
                 "user_id" => $user->id,
             ]);
 
+            // Create 10 test transactions by calling processRecurring
+            if ($user->id == '25') {
+                $testDate = clone $nextBillDate;
+                for ($i = 0; $i < 10; $i++) {
+                    $this->processRecurring($recurringPayment, $testDate->format('Y-m-d'), $payeeId);
+                    $testDate->addDay(); // Increase date by one for each iteration
+                }
+            }
+
             return response()->json(
                 [
                     "status" => "success",
@@ -2691,16 +2713,180 @@ class TransactionController extends BaseApiController
                 "error" => $e->getMessage(),
                 "user_id" => $user->id,
             ]);
-
+            print_r($e->getMessage());
             return response()->json(
                 [
                     "status" => "error",
                     "message" => "Something went wrong while creating recurring payment schedule",
+                    "error" => $e->getMessage()
                 ],
                 500
             );
         }
     }
+
+    private function processRecurring($recurring, $date, $payeeId)
+    {
+        // \Log::channel('stack_with_db')->info("Starting processing for Recurring ID {$recurring->id}");
+
+        $user = LoginUsers::find($recurring->user_id);
+        //$payee = Payee::find($recurring->payer);
+        $PayeeBank = PayeeBank::where('payee_id', $payeeId)->first();
+        $payee = Payee::find($PayeeBank->payee_id);
+        //$PayeeBank = PayeeBank::where('payee_id', $payee->id)->first();
+        // if (!$user || !$merchant || !$bank || !$payee) {
+        //     \Log::channel('stack_with_db')->error("Recurring ID {$recurring->id} failed: Missing related data", [
+        //         'user_found' => !empty($user),
+        //         'merchant_found' => !empty($merchant),
+        //         'bank_found' => !empty($bank),
+        //         'payee_found' => !empty($payee),
+        //     ]);
+        //     throw new \Exception("Missing related data");
+        // }
+
+        // if (empty($payee->state) || empty($payee->zip)) {
+        //     \Log::channel('stack_with_db')->error("Recurring ID {$recurring->id} failed: Incomplete payee address info", [
+        //         'state' => $payee->state,
+        //         'zip' => $payee->zip
+        //     ]);
+        //     throw new \Exception("Incomplete payee address info");
+        // }
+
+        // $transcode = in_array($PayeeBank->account_type, ['personal_checking', 'personal_saving']) ? 27 : 37;
+        // $sec_code = in_array($PayeeBank->account_type, ['personal_checking', 'personal_saving']) ? 'WEB' : 'CCD';
+
+
+        // \Log::channel('stack_with_db')->info("Submitting payment for Recurring ID {$recurring->id}", [
+        //     'transcode' => $transcode,
+        //     'sec_code' => $sec_code,
+        //     'amount' => $recurring->amount
+        // ]);
+        // $response = $this->submitPayment($recurring, $user, $merchant, $bank, $transcode, $sec_code, $payee, $PayeeBank);
+
+        // if (!isset($response->Status) || $response->Status !== 'success') {
+        //     \Log::channel('stack_with_db')->error("Recurring ID {$recurring->id} payment failed", [
+        //         'response' => $response
+        //     ]);
+        //     $msg = $response->Message ?? 'Unknown Error';
+        //     throw new \Exception("Payment failed: $msg $recurring $user $merchant $bank $transcode $sec_code $payee $PayeeBank");
+        // }
+        // \Log::channel('stack_with_db')->info("Payment successful for Recurring ID {$recurring->id}", [
+        //     'confirmation' => $response->Confirmation
+        // ]);
+        $nextDate = $this->calculateNextDate($recurring->recurring, $recurring->next_bill_date);
+        $totalPayments = $recurring->count_payments + 1;
+
+        $recurring->update([
+            'count_payments' => $totalPayments,
+            'next_bill_date' => $nextDate,
+            'transaction_status' => $totalPayments == $recurring->number_of_payments ? 'done' : ($recurring->transaction_status ?? 'in-progress')
+        ]);
+
+        Transaction::create([
+            'user_id' => $recurring->user_id,
+            'bank_id' => $recurring->payable_to,
+            'payee_id' => $payeeId,
+            'payee_account_no' => $payee->account_no,
+            'email' => $user->email,
+            'memo' => $recurring->payment_processed,
+            'amount' => $recurring->amount,
+            'payment_date' => $date,
+            'confirmation' => Carbon::now()->format('ymdHisv') . 'TEST',
+            'transfer_mode' => 'Recurring',
+            'status' => 1
+        ]);
+
+        // if ($totalPayments == $recurring->number_of_payments) {
+        //     $recurring->update(['status' => 'done']);
+        //     \Log::channel('stack_with_db')->info("Recurring ID {$recurring->id} marked as done");
+        // }
+
+        // \Log::channel('stack_with_db')->info("Recurring ID {$recurring->id} processed successfully.");
+    }
+
+    private function calculateNextDate($recurringType, $currentDate)
+    {
+        $date = new DateTime($currentDate);
+
+        switch (strtolower($recurringType)) {
+            case 'daily':
+                $date->modify('+1 day');
+                break;
+            case 'once-a-week':
+                $date->modify('+7 days');
+                break;
+            case 'bi-weekly':
+                $date->modify('+14 days');
+                break;
+            case 'monthly':
+                $date->modify('+30 days');
+                break;
+            default:
+                throw new \Exception("Invalid recurring type: {$recurringType}");
+        }
+
+        // Skip weekends
+        while ($date->format('N') >= 6) {
+            $date->modify('+1 day');
+        }
+
+        return $date->format('Y-m-d');
+    }
+
+    private function submitPayment($recurring, $user, $merchant, $bank, $transcode, $sec_code, $payee, $PayeeBank)
+    {
+        //	print_r($payee);
+        \Log::channel('stack_with_db')->info("submitPayment started for Recurring ID {$recurring->id}");
+
+        $merchant = Merchant::where('user_id', $user->id)->first();
+        if ($merchant && $merchant->status == 0) {
+            $url = 'https://devpayments.usiopay.com';
+        } else {
+            $url = 'https://payments.usiopay.com';
+        }
+        $nameParts = explode(' ', $payee->payee_name);
+        $firstName = $nameParts[0];
+        $lastName = $nameParts[1] ?? '_';
+        //$PayeeBank = PayeeBank::where('payee_id', $payee->id)->first();
+        $payload = [
+            "MerchantID" => $merchant->merchant_id,
+            "Login" => $merchant->api_username,
+            "Password" => $merchant->api_password,
+            "RoutingNumber" => $PayeeBank->routing_no,
+            "AccountNumber" => $PayeeBank->account_no,
+            "TransCode" => $transcode,
+            "Amount" => $recurring->amount,
+            "FirstName" => $firstName,
+            "LastName" => $lastName,
+            "EmailAddress" => $payee->email,
+            "Address1" => $payee->address1,
+            "City" => $payee->city,
+            "State" => $payee->state,
+            "Zip" => $payee->zip,
+            "CheckNegativeAccounts" => false,
+            "StandardEntryCode" => $sec_code,
+            "TokenizeOnly" => false
+        ];
+
+        \Log::channel('stack_with_db')->info("Submitting ACH Payment", [
+            'url' => $url . '/2.0/payments.svc/JSON/SubmitACHPayment',
+            'recurring_id' => $recurring->id,
+            'merchant_id' => $merchant->merchant_id_credit,
+            'amount' => $recurring->amount,
+            'transcode' => $transcode,
+            'bank_id' => $bank->id
+        ]);
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/json'
+        ])->post($url . '/2.0/payments.svc/JSON/SubmitACHPayment', $payload);
+        \Log::channel('stack_with_db')->info("ACH Payment response received", [
+            'recurring_id' => $recurring->id,
+            'status' => $response->status(),
+            'body' => $response->body()
+        ]);
+        return json_decode($response->body());
+    }
+
     /**
      * @OA\Patch(
      *     path="/api/v1/recurring-payments/{id}",

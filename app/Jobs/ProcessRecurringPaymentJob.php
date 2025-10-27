@@ -1,6 +1,9 @@
 <?php
+
 namespace App\Jobs;
+
 use App\Models\RecurringInformation;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ProcessRecurringPaymentJob implements ShouldQueue
 {
