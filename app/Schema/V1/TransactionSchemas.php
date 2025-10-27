@@ -206,19 +206,19 @@ use OpenApi\Annotations as OA;
  *                 example="Cleared"
  *             ),
  *             @OA\Property(
- *                 property="Merchant/PayeeName",
+ *                 property="merchant_payee_name",
  *                 type="string",
  *                 description="Merchant or Payee Name.",
  *                 nullable=true,
  *                 example=null
  *             ),
  *             @OA\Property(
- *                 property="Schedule Name",
+ *                 property="schedule_name",
  *                 type="string",
  *                 example="sfvdzfvsd"
  *             ),
  *             @OA\Property(
- *                 property="Schedule Purpose",
+ *                 property="schedule_purpose",
  *                 type="string",
  *                 example=""
  *             ),
@@ -404,19 +404,19 @@ use OpenApi\Annotations as OA;
  *                 example="Cleared"
  *             ),
  *             @OA\Property(
- *                 property="Merchant/PayeeName",
+ *                 property="merchant_payee_name",
  *                 type="string",
  *                 description="Merchant or Payee Name.",
  *                 nullable=true,
  *                 example=null
  *             ),
  *             @OA\Property(
- *                 property="Schedule Name",
+ *                 property="schedule_name",
  *                 type="string",
  *                 example="sfvdzfvsd"
  *             ),
  *             @OA\Property(
- *                 property="Schedule Purpose",
+ *                 property="schedule_purpose",
  *                 type="string",
  *                 example=""
  *             ),
@@ -466,7 +466,14 @@ use OpenApi\Annotations as OA;
  *             example="transactions"
  *         ),
  *         @OA\Property(
- *             property="data",
+ *             property="user",
+ *             type="object",
+ *             @OA\Property(property="id", type="integer", example=25),
+ *             @OA\Property(property="name", type="string", example="loreum"),
+ *             @OA\Property(property="email", type="string", example="kaswebtester@gmail.com")
+ *         ),
+ *         @OA\Property(
+ *             property="transactions",
  *             type="array",
  *             @OA\Items(ref="#/components/schemas/TransactionByDateRangeMergedSchema")
  *         ),

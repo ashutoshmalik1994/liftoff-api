@@ -141,7 +141,7 @@ class TransactionController extends BaseApiController
             // 🔹 Fetch Transactions
             $transactions = $query->get()->map(function ($item) {
                 $item->status_text = $this->getStatusText($item->status);
-                $item->{'Merchant/PayeeName'} = $item->payee
+                $item->{'merchant_payee_name'} = $item->payee
                     ? $item->payee->payee_name
                     : null;
 
@@ -153,8 +153,8 @@ class TransactionController extends BaseApiController
                 // 🔹 Memo split
                 if (isset($item->memo)) {
                     $parts = explode('-', $item->memo, 2);
-                    $item->{'Schedule Name'} = trim($parts[0] ?? '');
-                    $item->{'Schedule Purpose'} = trim($parts[1] ?? '');
+                    $item->{'schedule_name'} = trim($parts[0] ?? '');
+                    $item->{'schedule_purpose'} = trim($parts[1] ?? '');
                     unset($item->memo);
                 }
 
@@ -298,13 +298,13 @@ class TransactionController extends BaseApiController
             // 🔹 Fetch Data
             $receivables = $query->get()->map(function ($item) {
                 $item->status_text = $this->getStatusText($item->status);
-                $item->{'Merchant/PayeeName'} = $item->payee?->payee_name;
+                $item->{'merchant_payee_name'} = $item->payee?->payee_name;
 
                 // 🔹 Memo split
                 if (!empty($item->memo)) {
                     [$scheduleName, $schedulePurpose] = array_pad(explode('-', $item->memo, 2), 2, '');
-                    $item->{'Schedule Name'} = trim($scheduleName);
-                    $item->{'Schedule Purpose'} = trim($schedulePurpose);
+                    $item->{'schedule_name'} = trim($scheduleName);
+                    $item->{'schedule_purpose'} = trim($schedulePurpose);
                     unset($item->memo);
                 }
 
@@ -480,12 +480,12 @@ class TransactionController extends BaseApiController
 
             if ($transaction) {
                 $transaction->status_text = $this->getStatusText($transaction->status);
-                $transaction->{'Merchant/PayeeName'} = $transaction->payee ? $transaction->payee->payee_name : null;
+                $transaction->{'merchant_payee_name'} = $transaction->payee ? $transaction->payee->payee_name : null;
 
                 if (isset($transaction->memo)) {
                     $parts = explode('-', $transaction->memo, 2);
-                    $transaction->{'Schedule Name'} = trim($parts[0] ?? '');
-                    $transaction->{'Schedule Purpose'} = trim($parts[1] ?? '');
+                    $transaction->{'schedule_name'} = trim($parts[0] ?? '');
+                    $transaction->{'schedule_purpose'} = trim($parts[1] ?? '');
                     unset($transaction->memo);
                 }
 
@@ -554,7 +554,7 @@ class TransactionController extends BaseApiController
 
             if ($receivable) {
                 $receivable->status_text = $this->getStatusText($receivable->status);
-                $receivable->{'Merchant/PayeeName'} = $receivable->payee ? $receivable->payee->payee_name : null;
+                $receivable->{'merchant_payee_name'} = $receivable->payee ? $receivable->payee->payee_name : null;
 
                 if (isset($receivable->memo)) {
                     $receivable->{'Shedule Purpose/Memo'} = $receivable->memo;
@@ -707,6 +707,7 @@ class TransactionController extends BaseApiController
         $from = $request->query("from");
         $to = $request->query("to");
         $userId = auth()->id();
+        $user = auth()->user();
 
         try {
             // Validate date format
@@ -739,7 +740,7 @@ class TransactionController extends BaseApiController
             $formatRecord = function ($record, $source) {
                 $record->source = $source;
                 $record->status_text = $this->getStatusText($record->status);
-                $record->{'Merchant/PayeeName'} = $record->payee ? $record->payee->payee_name : null;
+                $record->{'merchant_payee_name'} = $record->payee ? $record->payee->payee_name : null;
 
                 $record->organization_date = $record->created_at ? $record->created_at->format("m-d-Y") : null;
                 $record->effective_date = $record->created_at ? $record->created_at->format("m-d-Y") : null;
@@ -772,8 +773,8 @@ class TransactionController extends BaseApiController
                 // Rename memo
                 if (isset($record->memo)) {
                     $parts = explode('-', $record->memo, 2);
-                    $record->{'Schedule Name'} = trim($parts[0] ?? '');
-                    $record->{'Schedule Purpose'} = trim($parts[1] ?? '');
+                    $record->{'schedule_name'} = trim($parts[0] ?? '');
+                    $record->{'schedule_purpose'} = trim($parts[1] ?? '');
                     unset($record->memo);
                 }
 
@@ -844,7 +845,12 @@ class TransactionController extends BaseApiController
 
             return ApiResponse::success([
                 "transaction_id" => $transactionId,
-                "data" => $paginated,
+                "user" => [
+                    "id" => $user->id,
+                    "name" => $user->name,
+                    "email" => $user->email,
+                ],
+                "transactions" => $paginated,
                 "pagination" => $paginationMeta,
             ]);
         } catch (\Exception $e) {
@@ -964,8 +970,8 @@ class TransactionController extends BaseApiController
                 // Memo → Schedule Name / Purpose
                 if (isset($responseData["memo"])) {
                     $parts = explode('-', $responseData["memo"], 2);
-                    $responseData["Schedule Name"] = trim($parts[0] ?? '');
-                    $responseData["Schedule Purpose"] = trim($parts[1] ?? ($parts[0] ?? ''));
+                    $responseData["schedule_name"] = trim($parts[0] ?? '');
+                    $responseData["schedule_purpose"] = trim($parts[1] ?? ($parts[0] ?? ''));
                     unset($responseData["memo"]);
                 }
 
@@ -980,7 +986,7 @@ class TransactionController extends BaseApiController
                     $responseData["rtn_code"] = $record->rtn_code;
                 }
 
-                $responseData["Merchant/PayeeName"] = $payeeName;
+                $responseData["merchant_payee_name"] = $payeeName;
                 $responseData["settlement_date"] = $settlementDate;
 
                 // Mask account number

@@ -1829,15 +1829,15 @@ components:
               description: 'Status of a transaction.'
               type: string
               example: Cleared
-            Merchant/PayeeName:
+            merchant_payee_name:
               description: 'Merchant or Payee Name.'
               type: string
               example: null
               nullable: true
-            'Schedule Name':
+            schedule_name:
               type: string
               example: sfvdzfvsd
-            'Schedule Purpose':
+            schedule_purpose:
               type: string
               example: ''
             transfer_mode:
@@ -1962,15 +1962,15 @@ components:
               description: 'Status of a transaction.'
               type: string
               example: Cleared
-            Merchant/PayeeName:
+            merchant_payee_name:
               description: 'Merchant or Payee Name.'
               type: string
               example: null
               nullable: true
-            'Schedule Name':
+            schedule_name:
               type: string
               example: sfvdzfvsd
-            'Schedule Purpose':
+            schedule_purpose:
               type: string
               example: ''
             deposit_date:
