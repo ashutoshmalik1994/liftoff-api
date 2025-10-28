@@ -18,7 +18,9 @@
     "paths": {
         "/api/v1/auth/token": {
             "post": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Get authentication token (JWT)",
                 "operationId": "212804489af549fa19ff9b679cdd33e3",
                 "requestBody": {
@@ -26,7 +28,10 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": ["username", "password"],
+                                "required": [
+                                    "username",
+                                    "password"
+                                ],
                                 "properties": {
                                     "username": {
                                         "type": "string",
@@ -70,7 +75,9 @@
         },
         "/api/v1/auth/refresh": {
             "post": {
-                "tags": ["Authentication"],
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Refresh an expired JWT token",
                 "operationId": "c42c3cd7fd7fe0dbd5bcc42962059e90",
                 "responses": {
@@ -90,7 +97,9 @@
         },
         "/api/v1/transactions": {
             "get": {
-                "tags": ["Transactions"],
+                "tags": [
+                    "Transactions"
+                ],
                 "summary": "List all sent transactions",
                 "description": "Retrieve a list of sent transactions. You can filter results using either `payee_id`.",
                 "operationId": "ee044a6172f37778765cd0f4b9dbc874",
@@ -182,7 +191,9 @@
         },
         "/api/v1/transactions/{id}": {
             "get": {
-                "tags": ["Transactions"],
+                "tags": [
+                    "Transactions"
+                ],
                 "summary": "Get a transaction or receivable by confirmation id",
                 "description": "Returns the transaction or receivable details based on the provided confirmation id",
                 "operationId": "84e38607374077b16feae70d81c067ca",
@@ -256,7 +267,9 @@
         },
         "/api/v1/transactions/date-range": {
             "get": {
-                "tags": ["Transactions"],
+                "tags": [
+                    "Transactions"
+                ],
                 "summary": "Get all transactions and receivables by originated date range",
                 "description": "Returns all transactions and receivables where originated_date is between 'from' and 'to' dates",
                 "operationId": "c16a3a578406de7230a4624cf466fa7e",
@@ -360,7 +373,9 @@
         },
         "/api/v1/transactions/{id}/cancel": {
             "post": {
-                "tags": ["Transactions"],
+                "tags": [
+                    "Transactions"
+                ],
                 "summary": "Cancel a transaction or receivable by ID",
                 "description": "Cancels a transaction or receivable using its unique ID",
                 "operationId": "73ad08bfb1f5678bbcfcdd968be1e62d",
@@ -433,7 +448,9 @@
         },
         "/api/v1/payees": {
             "get": {
-                "tags": ["Payees / Merchants"],
+                "tags": [
+                    "Payees / Merchants"
+                ],
                 "summary": "Get all payees / merchants",
                 "operationId": "85988b94349a335cee16c9f5129e6bc8",
                 "parameters": [
@@ -504,7 +521,9 @@
                 ]
             },
             "post": {
-                "tags": ["Payees / Merchants"],
+                "tags": [
+                    "Payees / Merchants"
+                ],
                 "summary": "Create a new payee and associated bank info",
                 "operationId": "115e67c1f1eff6561395c9dc0a8a7def",
                 "requestBody": {
@@ -673,7 +692,9 @@
         },
         "/api/v1/payees/{id}": {
             "get": {
-                "tags": ["Payees / Merchants"],
+                "tags": [
+                    "Payees / Merchants"
+                ],
                 "summary": "Get a specific payee by ID",
                 "operationId": "de43b245f4327c2e9d0e03856f818797",
                 "parameters": [
@@ -743,7 +764,9 @@
                 ]
             },
             "put": {
-                "tags": ["Payees / Merchants"],
+                "tags": [
+                    "Payees / Merchants"
+                ],
                 "summary": "Update an existing payee ",
                 "operationId": "77b8310c1755b15665d9dcaa73b92bda",
                 "parameters": [
@@ -885,7 +908,9 @@
         },
         "/api/v1/payees/{id}/bank-accounts": {
             "post": {
-                "tags": ["Payees / Merchants"],
+                "tags": [
+                    "Payees / Merchants"
+                ],
                 "summary": "Add a bank account to a payee",
                 "description": "Associates a new bank account with an existing payee (merchant).",
                 "operationId": "PayeeBankAccount",
@@ -962,7 +987,9 @@
         },
         "/api/v1/banks": {
             "get": {
-                "tags": ["Bank Accounts"],
+                "tags": [
+                    "Bank Accounts"
+                ],
                 "summary": "List authenticated user's bank accounts with filters",
                 "operationId": "6190c7412368ef6c84bb88affdbd4e6f",
                 "parameters": [
@@ -1026,7 +1053,9 @@
                 ]
             },
             "post": {
-                "tags": ["Bank Accounts"],
+                "tags": [
+                    "Bank Accounts"
+                ],
                 "summary": "Create a new bank account",
                 "operationId": "44c75d0080900fc827fec62c71874280",
                 "requestBody": {
@@ -1169,7 +1198,9 @@
         },
         "/api/v1/banks/{id}": {
             "get": {
-                "tags": ["Bank Accounts"],
+                "tags": [
+                    "Bank Accounts"
+                ],
                 "summary": "Get a specific bank account by ID for the authenticated user",
                 "operationId": "6eaedc739a6a8534bbffb1029858f972",
                 "parameters": [
@@ -1203,7 +1234,9 @@
         },
         "/api/v1/recurring-payments": {
             "get": {
-                "tags": ["Recurring Payments"],
+                "tags": [
+                    "Recurring Payments"
+                ],
                 "summary": "List all recurring payment schedules",
                 "operationId": "677f495c4d1821756bc814ee47e5b92f",
                 "parameters": [
@@ -1257,7 +1290,9 @@
                 ]
             },
             "post": {
-                "tags": ["Recurring Payments"],
+                "tags": [
+                    "Recurring Payments"
+                ],
                 "summary": "Create a new recurring payment schedule",
                 "operationId": "2f3750524d5345cab3d2bd5cd309c90c",
                 "requestBody": {
@@ -1370,6 +1405,10 @@
                                                     "type": "integer",
                                                     "example": 1
                                                 },
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
                                                 "status": {
                                                     "type": "string",
                                                     "example": "Active"
@@ -1382,6 +1421,50 @@
                                                     "type": "string",
                                                     "format": "date",
                                                     "example": "2025-09-19"
+                                                },
+                                                "number_of_payments": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "last_bill_date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-09-19"
+                                                },
+                                                "amount": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "payer": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "payable_to": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "next_bill_date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2025-10-01"
+                                                },
+                                                "payment_processed": {
+                                                    "type": "string",
+                                                    "example": "TEST MERCHANT"
+                                                },
+                                                "purpose": {
+                                                    "type": "string",
+                                                    "example": "TEST MERCHANT"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "10-26-2025"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "10-26-2025"
                                                 }
                                             },
                                             "type": "object"
@@ -1422,7 +1505,9 @@
         },
         "/api/v1/recurring-payments/{id}": {
             "get": {
-                "tags": ["Recurring Payments"],
+                "tags": [
+                    "Recurring Payments"
+                ],
                 "summary": "Get a specific recurring payment",
                 "operationId": "c9aaa5898ab122d98da0f2e37f128600",
                 "parameters": [
@@ -1458,29 +1543,73 @@
                                                     "example": "active"
                                                 },
                                                 "user_id": {
-                                                    "type": "integer"
+                                                    "type": "integer",
+                                                    "example": 1
                                                 },
                                                 "recurring": {
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "example": "Daily"
                                                 },
                                                 "first_payment_date": {
                                                     "type": "string",
-                                                    "format": "date"
+                                                    "format": "date",
+                                                    "example": "10-27-2025"
                                                 },
-                                                "payer": {
-                                                    "type": "integer",
-                                                    "example": 2
+                                                "last_bill_date": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "11-07-2025"
                                                 },
-                                                "payable_to": {
+                                                "number_of_payments": {
                                                     "type": "integer",
-                                                    "example": 3
+                                                    "example": 1
                                                 },
                                                 "amount": {
-                                                    "type": "string"
+                                                    "type": "integer",
+                                                    "example": 149.9
+                                                },
+                                                "payable_to": {
+                                                    "type": "string",
+                                                    "example": "customer bank"
+                                                },
+                                                "payer_id": {
+                                                    "type": "string",
+                                                    "example": "r109CX"
+                                                },
+                                                "payable_to_id": {
+                                                    "type": "count_payments",
+                                                    "example": 1
+                                                },
+                                                "schedule_purpose": {
+                                                    "type": "string",
+                                                    "example": "TEST MERCHANT D 3681 1"
+                                                },
+                                                "schedule_name": {
+                                                    "type": "string",
+                                                    "example": "MCA PMT"
+                                                },
+                                                "count_payments": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "transaction_status": {
+                                                    "type": "string",
+                                                    "example": "done"
                                                 },
                                                 "next_bill_date": {
                                                     "type": "string",
-                                                    "format": "date"
+                                                    "format": "date",
+                                                    "example": "11-10-2025"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "10-26-2025"
+                                                },
+                                                "updated_at": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "10-26-2025"
                                                 }
                                             },
                                             "type": "object"
@@ -1519,7 +1648,9 @@
                 ]
             },
             "patch": {
-                "tags": ["Recurring Payments"],
+                "tags": [
+                    "Recurring Payments"
+                ],
                 "summary": "Update a recurring payment (partial update)",
                 "operationId": "05391c3f59c3ff5d818e1e1d87ddc4e5",
                 "parameters": [
@@ -1720,7 +1851,9 @@
         },
         "/api/v1/recurring-payments/{id}/{status}": {
             "post": {
-                "tags": ["Recurring Payments"],
+                "tags": [
+                    "Recurring Payments"
+                ],
                 "summary": "Update the status of a recurring payment",
                 "operationId": "51402ac5d1b3bb3b1abdbfd56d42d16d",
                 "parameters": [
@@ -1740,7 +1873,11 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "enum": ["pause", "resume", "stop"]
+                            "enum": [
+                                "pause",
+                                "resume",
+                                "stop"
+                            ]
                         }
                     }
                 ],

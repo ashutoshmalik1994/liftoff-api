@@ -974,6 +974,9 @@ paths:
                       id:
                         type: integer
                         example: 1
+                      user_id:
+                        type: integer
+                        example: 1
                       status:
                         type: string
                         example: Active
@@ -984,6 +987,40 @@ paths:
                         type: string
                         format: date
                         example: '2025-09-19'
+                      number_of_payments:
+                        type: integer
+                        example: 1
+                      last_bill_date:
+                        type: string
+                        format: date
+                        example: '2025-09-19'
+                      amount:
+                        type: integer
+                        example: 1
+                      payer:
+                        type: integer
+                        example: 1
+                      payable_to:
+                        type: integer
+                        example: 1
+                      next_bill_date:
+                        type: string
+                        format: date
+                        example: '2025-10-01'
+                      payment_processed:
+                        type: string
+                        example: 'TEST MERCHANT'
+                      purpose:
+                        type: string
+                        example: 'TEST MERCHANT'
+                      updated_at:
+                        type: string
+                        format: date
+                        example: 10-26-2025
+                      created_at:
+                        type: string
+                        format: date
+                        example: 10-26-2025
                     type: object
                 type: object
         400:
@@ -1036,22 +1073,57 @@ paths:
                         example: active
                       user_id:
                         type: integer
+                        example: 1
                       recurring:
                         type: string
+                        example: Daily
                       first_payment_date:
                         type: string
                         format: date
-                      payer:
-                        type: integer
-                        example: 2
-                      payable_to:
-                        type: integer
-                        example: 3
-                      amount:
+                        example: 10-27-2025
+                      last_bill_date:
                         type: string
+                        format: date
+                        example: 11-07-2025
+                      number_of_payments:
+                        type: integer
+                        example: 1
+                      amount:
+                        type: integer
+                        example: 149.9
+                      payable_to:
+                        type: string
+                        example: 'customer bank'
+                      payer_id:
+                        type: string
+                        example: r109CX
+                      payable_to_id:
+                        type: count_payments
+                        example: 1
+                      schedule_purpose:
+                        type: string
+                        example: 'TEST MERCHANT D 3681 1'
+                      schedule_name:
+                        type: string
+                        example: 'MCA PMT'
+                      count_payments:
+                        type: integer
+                        example: 1
+                      transaction_status:
+                        type: string
+                        example: done
                       next_bill_date:
                         type: string
                         format: date
+                        example: 11-10-2025
+                      created_at:
+                        type: string
+                        format: date
+                        example: 10-26-2025
+                      updated_at:
+                        type: string
+                        format: date
+                        example: 10-26-2025
                     type: object
                 type: object
         404:
@@ -2001,7 +2073,19 @@ components:
             source:
               type: string
               example: transactions
-            data:
+            user:
+              properties:
+                id:
+                  type: integer
+                  example: 25
+                name:
+                  type: string
+                  example: loreum
+                email:
+                  type: string
+                  example: kaswebtester@gmail.com
+              type: object
+            transactions:
               type: array
               items:
                 $ref: '#/components/schemas/TransactionByDateRangeMergedSchema'

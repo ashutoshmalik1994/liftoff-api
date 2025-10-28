@@ -2356,13 +2356,22 @@ class TransactionController extends BaseApiController
      *                 type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
      *                 @OA\Property(property="status", type="string", example="active"),
-     *                 @OA\Property(property="user_id", type="integer"),
-     *                 @OA\Property(property="recurring", type="string"),
-     *                 @OA\Property(property="first_payment_date", type="string", format="date"),
-     *                 @OA\Property(property="payer", type="integer", example=2),
-     *                 @OA\Property(property="payable_to", type="integer", example=3),
-     *                 @OA\Property(property="amount", type="string"),
-     *                 @OA\Property(property="next_bill_date", type="string", format="date")
+     *                 @OA\Property(property="user_id", type="integer", example=1),
+     *                 @OA\Property(property="recurring", type="string", example="Daily"),
+     *                 @OA\Property(property="first_payment_date", type="string", format="date", example="10-27-2025"),
+     *                 @OA\Property(property="last_bill_date", type="string", format="date", example="11-07-2025"),
+     *                 @OA\Property(property="number_of_payments", type="integer", example=1),
+     *                 @OA\Property(property="amount", type="integer", example=149.9),
+     *                 @OA\Property(property="payable_to", type="string", example="customer bank"),
+     *                 @OA\Property(property="payer_id", type="string", example="r109CX"),
+     *                 @OA\Property(property="payable_to_id", type="count_payments", example=1),
+     *                 @OA\Property(property="schedule_purpose", type="string", example="TEST MERCHANT D 3681 1"),
+     *                 @OA\Property(property="schedule_name", type="string", example="MCA PMT"),
+     *                 @OA\Property(property="count_payments", type="integer", example=1),
+     *                 @OA\Property(property="transaction_status", type="string", example="done"),
+     *                 @OA\Property(property="next_bill_date", type="string", format="date", example="11-10-2025"),
+     *                 @OA\Property(property="created_at", type="string", format="date", example="10-26-2025"),
+     *                 @OA\Property(property="updated_at", type="string", format="date", example="10-26-2025"),
      *             )
      *         )
      *     ),
@@ -2375,7 +2384,8 @@ class TransactionController extends BaseApiController
      *         )
      *     )
      * )
-     */ public function GetRecurringData($id)
+     */
+    public function GetRecurringData($id)
     {
         try {
             $user = Auth::user();
@@ -2426,29 +2436,35 @@ class TransactionController extends BaseApiController
             // Fallback if relationships are not loaded or not defined
             $payer = $recurring->payerRelation ?? Payee::find($payeeBank->payee_id);
             $payableTo = $recurring->payableToRelation ?? BankAccount::find($recurring->payable_to);
+            $scheduleName = null;
+            $schedulePurpose = null;
+            if (!empty($recurring['purpose'])) {
+                $parts = explode('-', $recurring['purpose'], 2);
+                $scheduleName = isset($parts[0]) ? trim($parts[0]) : null;
+                $schedulePurpose = isset($parts[1]) ? trim($parts[1]) : null;
+            }
             $responseData = [
                 "id" => $recurring->id,
                 "status" => $recurring->status,
-                "user_id" => $recurring->user_id,
+                "user_id" => (int) $recurring->user_id,
                 "recurring" => $recurring->recurring,
                 "first_payment_date" => $recurring->first_payment_date ? \Carbon\Carbon::parse($recurring->first_payment_date)->format('m-d-Y') : null,
                 "last_bill_date" => $recurring->last_bill_date ? \Carbon\Carbon::parse($recurring->last_bill_date)->format('m-d-Y') : null,
-                "number_of_payments" => $recurring->number_of_payments,
-                "amount" => $recurring->amount,
+                "number_of_payments" => (int) $recurring->number_of_payments,
+                "amount" => (int) $recurring->amount,
                 "payable_to" => $payableTo?->name ?? null,
                 "payer_id" => $payeeBank?->unique_id ?? null,
                 "payable_to_id" => $payableTo?->id ?? null,
                 "schedule_purpose" => $recurring->purpose,
-                "count_payments" => $recurring->count_payments,
+                "count_payments" => (int) $recurring->count_payments,
                 "transaction_status" => $recurring->transaction_status,
+                "schedule_name" => $scheduleName,
+                "schedule_purpose" => $schedulePurpose,
                 "next_bill_date" => $recurring->next_bill_date ? \Carbon\Carbon::parse($recurring->next_bill_date)->format('m-d-Y') : null,
                 "created_at" => $recurring->created_at ? \Carbon\Carbon::parse($recurring->created_at)->format('m-d-Y') : null,
                 "updated_at" => $recurring->updated_at ? \Carbon\Carbon::parse($recurring->updated_at)->format('m-d-Y') : null,
             ];
-            return ApiResponse::success([
-                "status" => "success",
-                "data" => $responseData
-            ], 200);
+            return ApiResponse::success($responseData, "Recurring payment retrieved successfully.", 200);
         } catch (\Exception $e) {
             // Log the error for debugging
             \Log::error('Error in GetRecurringData: ' . $e->getMessage());
@@ -2512,9 +2528,20 @@ class TransactionController extends BaseApiController
      *             @OA\Property(property="message", type="string", example="Recurring payment schedule created successfully"),
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="user_id", type="integer", example=1),
      *                 @OA\Property(property="status", type="string", example="Active"),
      *                 @OA\Property(property="recurring", type="string", example="Monthly"),
-     *                 @OA\Property(property="first_payment_date", type="string", format="date", example="2025-09-19")
+     *                 @OA\Property(property="first_payment_date", type="string", format="date", example="2025-09-19"),
+     *                 @OA\Property(property="number_of_payments", type="integer", example=1),
+     *                 @OA\Property(property="last_bill_date", type="string", format="date", example="2025-09-19"),
+     *                 @OA\Property(property="amount", type="integer", example=1),
+     *                 @OA\Property(property="payer", type="integer", example=1),
+     *                 @OA\Property(property="payable_to", type="integer", example=1),
+     *                 @OA\Property(property="next_bill_date", type="string", format="date", example="2025-10-01"),
+     *                 @OA\Property(property="payment_processed", type="string", example="TEST MERCHANT"),
+     *                 @OA\Property(property="purpose", type="string", example="TEST MERCHANT"),
+     *                 @OA\Property(property="updated_at", type="string", format="date", example="10-26-2025"),
+     *                 @OA\Property(property="created_at", type="string", format="date", example="10-26-2025"),
      *             )
      *         )
      *     ),
