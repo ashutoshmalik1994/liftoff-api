@@ -2540,8 +2540,8 @@ class TransactionController extends BaseApiController
      *                 @OA\Property(property="next_bill_date", type="string", format="date", example="2025-10-01"),
      *                 @OA\Property(property="payment_processed", type="string", example="TEST MERCHANT"),
      *                 @OA\Property(property="purpose", type="string", example="TEST MERCHANT"),
-     *                 @OA\Property(property="updated_at", type="string", format="date", example="10-26-2025"),
-     *                 @OA\Property(property="created_at", type="string", format="date", example="10-26-2025"),
+     *                 @OA\Property(property="updated_at", type="string", format="date", example="2025-10-26"),
+     *                 @OA\Property(property="created_at", type="string", format="date", example="2025-10-26"),
      *             )
      *         )
      *     ),
@@ -2712,10 +2712,10 @@ class TransactionController extends BaseApiController
 
             // format response
             $formattedPayment = $recurringPayment->toArray();
-            $formattedPayment['first_payment_date'] = \Carbon\Carbon::parse($recurringPayment->first_payment_date)->format('m-d-Y');
-            $formattedPayment['last_bill_date'] = \Carbon\Carbon::parse($recurringPayment->last_bill_date)->format('m-d-Y');
-            $formattedPayment['updated_at'] = \Carbon\Carbon::parse($recurringPayment->updated_at)->format('m-d-Y');
-            $formattedPayment['created_at'] = \Carbon\Carbon::parse($recurringPayment->created_at)->format('m-d-Y');
+            $formattedPayment['first_payment_date'] = \Carbon\Carbon::parse($recurringPayment->first_payment_date)->format('Y-m-d');
+            $formattedPayment['last_bill_date'] = \Carbon\Carbon::parse($recurringPayment->last_bill_date)->format('Y-m-d');
+            $formattedPayment['updated_at'] = \Carbon\Carbon::parse($recurringPayment->updated_at)->format('Y-m-d');
+            $formattedPayment['created_at'] = \Carbon\Carbon::parse($recurringPayment->created_at)->format('Y-m-d');
 
             Log::info("Recurring payment schedule created", [
                 "id" => $recurringPayment->id,

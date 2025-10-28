@@ -1016,11 +1016,11 @@ paths:
                       updated_at:
                         type: string
                         format: date
-                        example: 10-26-2025
+                        example: '2025-10-26'
                       created_at:
                         type: string
                         format: date
-                        example: 10-26-2025
+                        example: '2025-10-26'
                     type: object
                 type: object
         400:
